@@ -1,5 +1,5 @@
 # 构建阶段
-FROM node:18-alpine as builder
+FROM registry.cn-hangzhou.aliyuncs.com/nodejs/node:18-alpine as builder
 
 # 添加 git 并配置
 RUN apk add --no-cache git \
@@ -17,6 +17,10 @@ COPY . .
 # 安装 pnpm
 RUN npm install -g pnpm
 
+# 配置 npm 和 pnpm 使用阿里云镜像
+RUN npm config set registry https://registry.npmmirror.com \
+    && pnpm config set registry https://registry.npmmirror.com
+
 # 安装依赖
 RUN pnpm install
 
@@ -24,12 +28,16 @@ RUN pnpm install
 RUN pnpm build
 
 # 生产阶段
-FROM node:18-alpine
+FROM registry.cn-hangzhou.aliyuncs.com/nodejs/node:18-alpine
 
 WORKDIR /app
 
 # 安装 pnpm
 RUN npm install -g pnpm
+
+# 配置 npm 和 pnpm 使用阿里云镜像
+RUN npm config set registry https://registry.npmmirror.com \
+    && pnpm config set registry https://registry.npmmirror.com
 
 # 只复制生产环境需要的文件
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
