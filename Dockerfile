@@ -28,7 +28,7 @@ RUN pnpm install
 RUN pnpm build
 
 # 生产阶段
-FROM node:18-alpine
+FROM swr.cn-south-1.myhuaweicloud.com/hua-cloud/node:18-alpine
 
 WORKDIR /app
 
