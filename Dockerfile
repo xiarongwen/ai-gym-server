@@ -1,5 +1,5 @@
 # 构建阶段
-FROM swr.cn-south-1.myhuaweicloud.com/hua-cloud/node:20.14.0-alpine AS maindeps
+FROM swr.cn-south-1.myhuaweicloud.com/hua-cloud/node:20.14.0-alpine AS builder
 
 # 添加 git 并配置
 RUN apk add --no-cache git \
