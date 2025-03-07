@@ -6,22 +6,19 @@ RUN apk add --no-cache git \
     && git config --global http.lowSpeedLimit 1000 \
     && git config --global http.lowSpeedTime 300 \
     && git config --global http.postBuffer 524288000 \
-    && git config --global core.compression 9
+    && git config --global core.compression 9 \
+    && git config --global http.sslVerify false
 
 WORKDIR /app
+
+# 复制源代码
+COPY . .
 
 # 安装 pnpm
 RUN npm install -g pnpm
 
-# 首先只复制 package.json 和 lock 文件以利用缓存
-COPY package.json pnpm-lock.yaml ./
-
-# 安装依赖并缓存
-RUN --mount=type=cache,target=/root/.pnpm-store \
-    pnpm install --frozen-lockfile
-
-# 复制源代码
-COPY . .
+# 安装依赖
+RUN pnpm install
 
 # 构建应用
 RUN pnpm build
@@ -38,9 +35,8 @@ RUN npm install -g pnpm
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
 COPY --from=builder /app/dist ./dist
 
-# 只安装生产依赖并使用缓存
-RUN --mount=type=cache,target=/root/.pnpm-store \
-    pnpm install --prod --frozen-lockfile
+# 只安装生产依赖
+RUN pnpm install --prod
 
 # 设置环境变量
 ENV NODE_ENV=production
