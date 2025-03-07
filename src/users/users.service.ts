@@ -11,26 +11,22 @@ export class UsersService {
     private userModel: Model<UserDocument>,
   ) {}
 
-  async findByPhone(phone: string): Promise<User | null> {
-    return this.userModel.findOne({ phone }).exec();
-  }
-
-  async findByAppleId(appleId: string): Promise<User | null> {
-    return this.userModel.findOne({ appleId }).exec();
+  async findByEmail(email: string): Promise<User | null> {
+    return this.userModel.findOne({ email }).exec();
   }
 
   async createUser(userData: Partial<User>): Promise<User> {
-    if (userData.password) {
-      userData.password = await bcrypt.hash(userData.password, 10);
+    if (userData.hashedPassword) {
+      userData.hashedPassword = await bcrypt.hash(userData.hashedPassword, 10);
     }
     const createdUser = new this.userModel(userData);
     return createdUser.save();
   }
 
-  async validateUser(phone: string, password: string): Promise<User | null> {
-    const user = await this.findByPhone(phone);
-    if (user && user.password) {
-      const isValid = await bcrypt.compare(password, user.password);
+  async validateUser(email: string, password: string): Promise<User | null> {
+    const user = await this.findByEmail(email);
+    if (user && user.hashedPassword) {
+      const isValid = await bcrypt.compare(password, user.hashedPassword);
       if (isValid) {
         return user;
       }

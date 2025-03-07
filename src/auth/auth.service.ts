@@ -12,33 +12,32 @@ export class AuthService {
     private configService: ConfigService,
   ) {}
 
-  async validatePhone(phone: string, password: string) {
-    const user = await this.usersService.validateUser(phone, password);
+  async validateUser(email: string, password: string) {
+    const user = await this.usersService.validateUser(email, password);
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
     return user;
   }
 
-  async registerWithPhone(phone: string, password: string, name: string) {
-    const existingUser = await this.usersService.findByPhone(phone);
+  async register(email: string, password: string, nickname: string) {
+    const existingUser = await this.usersService.findByEmail(email);
     if (existingUser) {
-      throw new UnauthorizedException('Phone number already registered');
+      throw new UnauthorizedException('Email already registered');
     }
 
     const user = await this.usersService.createUser({
-      phone,
-      password,
-      name,
-      provider: 'local',
-      isVerified: true, // 在实际应用中，应该通过短信验证后再设置为 true
+      email,
+      hashedPassword: password,
+      nickname,
+      isVerified: false, // 需要通过邮箱验证
     });
 
     return this.generateToken(user);
   }
 
-  async loginWithPhone(phone: string, password: string) {
-    const user = await this.validatePhone(phone, password);
+  async login(email: string, password: string) {
+    const user = await this.validateUser(email, password);
     return this.generateToken(user);
   }
 
@@ -48,13 +47,12 @@ export class AuthService {
         audience: this.configService.get<string>('APPLE_CLIENT_ID'),
       });
 
-      let user = await this.usersService.findByAppleId(appleUser.sub);
+      let user = await this.usersService.findByEmail(appleUser.email);
       if (!user) {
         // 如果用户不存在，创建新用户
         user = await this.usersService.createUser({
-          appleId: appleUser.sub,
-          name: appleUser.email?.split('@')[0] || 'Apple User',
-          provider: 'apple',
+          email: appleUser.email,
+          nickname: appleUser.email?.split('@')[0] || 'Apple User',
           isVerified: true,
         });
       }
@@ -68,17 +66,17 @@ export class AuthService {
   private generateToken(user: any) {
     const payload = {
       sub: user._id,
-      phone: user.phone,
-      provider: user.provider,
+      email: user.email,
+      role: user.role,
     };
     return {
       access_token: this.jwtService.sign(payload),
       user: {
         id: user._id,
-        phone: user.phone,
-        name: user.name,
+        email: user.email,
+        nickname: user.nickname,
         avatar: user.avatar,
-        provider: user.provider,
+        role: user.role,
       },
     };
   }

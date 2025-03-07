@@ -2,13 +2,13 @@ import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 interface RegisterDto {
-  phone: string;
+  email: string;
   password: string;
-  name: string;
+  nickname: string;
 }
 
 interface LoginDto {
-  phone: string;
+  email: string;
   password: string;
 }
 
@@ -22,17 +22,17 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
-    return this.authService.registerWithPhone(
-      registerDto.phone,
+    return this.authService.register(
+      registerDto.email,
       registerDto.password,
-      registerDto.name,
+      registerDto.nickname,
     );
   }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto) {
-    return this.authService.loginWithPhone(loginDto.phone, loginDto.password);
+    return this.authService.login(loginDto.email, loginDto.password);
   }
 
   @Post('apple')
