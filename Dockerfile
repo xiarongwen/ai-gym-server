@@ -1,5 +1,5 @@
 # 构建阶段
-FROM node:18-alpine as builder
+FROM x13wnsp3.mirror.aliyuncs.com/library/node:18-alpine as builder
 
 # 添加 git 并配置
 RUN apk add --no-cache git \
@@ -28,7 +28,7 @@ RUN pnpm install
 RUN pnpm build
 
 # 生产阶段
-FROM node:18-alpine
+FROM x13wnsp3.mirror.aliyuncs.com/library/node:18-alpine
 
 WORKDIR /app
 
