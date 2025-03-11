@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { TrainingModule } from './training/training.module';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth/auth.service';
@@ -18,6 +19,7 @@ import { JwtStrategy } from './auth/strategies/jwt.strategy';
     ),
     UsersModule,
     AuthModule,
+    TrainingModule,
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your_jwt_secret',

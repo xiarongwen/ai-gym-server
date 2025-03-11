@@ -14,10 +14,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    const user = await this.authService.validateUserById(payload.sub);
-    if (!user) {
+    try {
+      const user = await this.authService.validateUserById(payload.sub);
+      if (!user) {
+        throw new UnauthorizedException('用户未找到');
+      }
+      return user;
+    } catch (error) {
+      console.error('JWT验证失败:', error);
       throw new UnauthorizedException('用户未授权');
     }
-    return user;
   }
 }

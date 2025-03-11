@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { TrainingController } from '../controllers/training.controller';
 import { authMiddleware } from '../middlewares/auth';
+import { TrainingPlanService } from '../services/training-plan.service';
 
 // 明确指定 Router 类型
 const router: Router = Router();
-const trainingController = new TrainingController();
+const trainingController = new TrainingController(new TrainingPlanService());
 
 // 所有路由都需要认证
 router.use(authMiddleware as any);

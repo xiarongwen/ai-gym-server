@@ -7,7 +7,7 @@ export type UserDocument = User & Document;
   timestamps: true, // 自动添加 createdAt 和 updatedAt 字段
 })
 export class User {
-  @Prop({ required: true, unique: true })
+  @Prop({ required: false, unique: true, sparse: true })
   email: string;
 
   @Prop({ required: true })
@@ -19,8 +19,8 @@ export class User {
   @Prop()
   avatar?: string;
 
-  @Prop()
-  phoneNumber?: string;
+  @Prop({ required: true, unique: true })
+  phone: string;
 
   @Prop({ default: false })
   isVerified: boolean;
