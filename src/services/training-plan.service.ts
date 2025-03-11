@@ -94,7 +94,7 @@ ${userInfo.preferredExercises?.length ? `- 偏好运动：${userInfo.preferredEx
       const response = await this.deepseek.chatCompletion([
         {
           role: 'system',
-          content: '你是一位专业的健身教练，擅长制定个性化训练计划。',
+          content: '你是一位专业的健身教练，擅长制定个性化训练计划。请直接返回JSON格式的训练计划，不要使用markdown代码块包装。',
         },
         {
           role: 'user',
@@ -106,27 +106,49 @@ ${userInfo.preferredExercises?.length ? `- 偏好运动：${userInfo.preferredEx
         throw new Error('Unexpected response format');
       }
 
-      const planString = response.choices[0].message.content;
-      const planJson = JSON.parse(planString) as TrainingPlan;
-      const planMarkdown = this.convertToMarkdown(planJson);
+      let planString = response.choices[0].message.content;
+      // 清理可能存在的markdown代码块标记
+      planString = this.cleanJsonString(planString);
+      try {
+        const planJson = JSON.parse(planString) as TrainingPlan;
+        const planMarkdown = this.convertToMarkdown(planJson);
 
-      // 保存到数据库
-      const trainingPlan = new TrainingPlanModel({
-        userId,
-        userInfo,
-        planJson,
-        planMarkdown,
-      });
-      await trainingPlan.save();
+        // 保存到数据库
+        const trainingPlan = new TrainingPlanModel({
+          userId,
+          userInfo,
+          planJson,
+          planMarkdown,
+        });
+        await trainingPlan.save();
 
-      return {
-        planJson,
-        planMarkdown,
-      };
+        return {
+          planJson,
+          planMarkdown,
+        };
+      } catch (jsonError) {
+        console.error('JSON解析失败:', jsonError, '原始内容:', planString);
+        throw new Error('训练计划格式无效');
+      }
     } catch (error) {
       console.error('生成训练计划失败:', error);
       throw new Error('生成训练计划失败');
     }
+  }
+
+  // 新增方法：清理JSON字符串
+  private cleanJsonString(input: string): string {
+    // 移除markdown代码块标记
+    let cleaned = input.replace(/```json\s*/g, '').replace(/```\s*$/g, '');
+    // 移除其他可能的markdown格式
+    cleaned = cleaned.replace(/```[\s\S]*?```/g, '');
+    // 尝试找到JSON对象的开始和结束
+    const startIndex = cleaned.indexOf('{');
+    const endIndex = cleaned.lastIndexOf('}');
+    if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+      cleaned = cleaned.substring(startIndex, endIndex + 1);
+    }
+    return cleaned.trim();
   }
 
   async getUserPlans(userId: string) {

@@ -29,13 +29,23 @@ export class AuthService {
   }
 
   async validateUserById(userId: string): Promise<any> {
-    console.log('验证用户ID:', userId);
-    const user = await this.usersService.findById(userId);
-    console.log('找到用户:', user ? '是' : '否');
-    if (user) {
-      return user;
+    try {
+      console.log('验证用户ID:', userId);
+      const user = await this.usersService.findById(userId);
+      console.log('找到用户:', user ? '是' : '否');
+
+      if (user) {
+        // 确保返回的用户对象包含 _id 字段
+        return {
+          ...((user as any)._doc || user),
+          _id: (user as any)._id.toString(),
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('验证用户ID失败:', error);
+      return null;
     }
-    return null;
   }
 
   async register(phone: string, password: string, nickname: string) {
@@ -57,10 +67,27 @@ export class AuthService {
 
   async login(user: any) {
     console.log('登录用户:', user);
+    // 检查用户对象
+    if (!user) {
+      throw new UnauthorizedException('无效的用户信息');
+    }
+
+    // 确保用户ID存在且为字符串
+    const userId = user._id
+      ? typeof user._doc._id === 'object' && user._id.toString
+        ? user._id.toString()
+        : String(user._id)
+      : null;
+    console.log('用户ID:', user._doc._id);
+    console.log('用户ID:', userId);
+
+    if (!user._doc._id) {
+      throw new UnauthorizedException('无效的用户ID');
+    }
     const payload = {
       // 使用手机号作为用户名，如果没有则使用邮箱（向后兼容）
       username: user.phone || user.email,
-      sub: user._id.toString(), // 确保 ID 是字符串
+      sub: userId,
     };
     console.log('生成令牌，用户ID:', payload.sub);
     return {

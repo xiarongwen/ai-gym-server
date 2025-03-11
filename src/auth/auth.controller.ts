@@ -6,17 +6,13 @@ import {
   HttpStatus,
   Logger,
   HttpException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
-interface RegisterDto {
-  email: string;
-  password: string;
-  nickname: string;
-}
-
 interface LoginDto {
-  email: string;
+  email?: string;
+  phone: string;
   password: string;
 }
 
@@ -32,7 +28,11 @@ export class AuthController {
   @Post('register')
   async register(
     @Body()
-    registerDto: { phone: string; password: string; nickname: string },
+    registerDto: {
+      phone: string;
+      password: string;
+      nickname: string;
+    },
   ) {
     try {
       this.logger.log(`注册请求: ${JSON.stringify(registerDto)}`);
@@ -56,12 +56,27 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto) {
     try {
-      this.logger.log(`登录请求: ${loginDto.email}`);
-      const result = await this.authService.login(loginDto);
-      this.logger.log(`登录成功: ${loginDto.email}`);
+      this.logger.log(`登录请求: ${loginDto.email || loginDto.phone}`);
+
+      // 先验证用户
+      const user = await this.authService.validateUser(
+        loginDto.email || loginDto.phone,
+        loginDto.password,
+      );
+
+      if (!user) {
+        throw new UnauthorizedException('用户名或密码错误');
+      }
+
+      // 验证成功后生成令牌
+      const result = await this.authService.login(user);
+      this.logger.log(`登录成功: ${loginDto.email || loginDto.phone}`);
       return result;
     } catch (error) {
-      this.logger.error(`登录失败: ${loginDto.email}`, error.stack);
+      this.logger.error(
+        `登录失败: ${loginDto.email || loginDto.phone}`,
+        error.stack,
+      );
       throw new HttpException(
         error.message || '登录失败',
         error.status || HttpStatus.UNAUTHORIZED,

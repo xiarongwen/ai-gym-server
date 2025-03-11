@@ -1,4 +1,14 @@
-import { Controller, Post, Get, Body, Param, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  UseGuards,
+  Req,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TrainingPlanService } from '../services/training-plan.service';
 import { UserFitnessInfo } from '../interfaces/training';
@@ -11,12 +21,24 @@ export class TrainingController {
   @UseGuards(JwtAuthGuard)
   @Post('generate-plan')
   async generatePlan(@Body() userInfo: UserFitnessInfo, @Req() req: Request) {
-    const userId = req.user._id;
-    if (!this.validateUserInfo(userInfo)) {
-      return { error: '无效的用户信息' };
-    }
+    try {
+      console.log('用户请求生成训练计划:', req.user);
+      const userId = req.user?._id;
+      if (!userId) {
+        return { error: '无法识别用户' };
+      }
+    //   if (!this.validateUserInfo(userInfo)) {
+    //     return { error: '无效的用户信息' };
+    //   }
 
-    return this.trainingService.generateTrainingPlan(userId, userInfo);
+      return this.trainingService.generateTrainingPlan(userId, userInfo);
+    } catch (error) {
+      console.error('生成训练计划失败:', error);
+      throw new HttpException(
+        '生成训练计划失败',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @UseGuards(JwtAuthGuard)
