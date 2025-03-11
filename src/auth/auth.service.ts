@@ -92,6 +92,11 @@ export class AuthService {
     console.log('生成令牌，用户ID:', payload.sub);
     return {
       access_token: this.jwtService.sign(payload),
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+      },
     };
   }
 

@@ -1,4 +1,4 @@
-import { DeepSeekService } from '../services/deepseek';
+import { DeepSeekService } from '../ds/deepseek';
 import { Stream } from 'openai/streaming';
 
 async function main() {

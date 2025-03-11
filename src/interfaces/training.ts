@@ -10,26 +10,35 @@ export interface UserFitnessInfo {
   preferredExercises?: string[]; // 偏好的运动类型
 }
 
+export interface Exercise {
+  name: string;
+  sets?: number;
+  reps?: string;
+  rest?: string;
+  duration?: string;
+  intensity?: string;
+  notes?: string;
+}
+
+export interface DaySchedule {
+  day: string;
+  focus: string;
+  exercises: Exercise[];
+}
+
+export interface Nutrition {
+  dailyCalories: string;
+  macronutrients: {
+    protein: string;
+    carbohydrates: string;
+    fats: string;
+  };
+  hydration: string;
+}
+
 export interface TrainingPlan {
   overview: string;
-  weeklySchedule: {
-    day: string;
-    exercises: {
-      name: string;
-      sets: number;
-      reps: string;
-      rest: string;
-      notes?: string;
-    }[];
-  }[];
-  nutrition: {
-    dailyCalories: number;
-    macros: {
-      protein: number;
-      carbs: number;
-      fats: number;
-    };
-    recommendations: string[];
-  };
+  weeklySchedule: DaySchedule[];
+  nutrition: Nutrition;
   tips: string[];
 }

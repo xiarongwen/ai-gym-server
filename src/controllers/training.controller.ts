@@ -10,7 +10,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { TrainingPlanService } from '../services/training-plan.service';
+import { TrainingPlanService } from '../training/training-plan.service';
 import { UserFitnessInfo } from '../interfaces/training';
 import { Request } from 'express';
 
@@ -27,10 +27,6 @@ export class TrainingController {
       if (!userId) {
         return { error: '无法识别用户' };
       }
-    //   if (!this.validateUserInfo(userInfo)) {
-    //     return { error: '无效的用户信息' };
-    //   }
-
       return this.trainingService.generateTrainingPlan(userId, userInfo);
     } catch (error) {
       console.error('生成训练计划失败:', error);

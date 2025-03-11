@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { TrainingController } from '../controllers/training.controller';
 import { authMiddleware } from '../middlewares/auth';
-import { TrainingPlanService } from '../services/training-plan.service';
+import { TrainingPlanService } from '../training/training-plan.service';
 
 // 明确指定 Router 类型
 const router: Router = Router();
