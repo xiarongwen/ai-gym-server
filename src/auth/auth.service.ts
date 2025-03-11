@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import * as AppleSignin from 'apple-signin-auth';
 import { ConfigService } from '@nestjs/config';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AuthService {
@@ -12,12 +13,21 @@ export class AuthService {
     private configService: ConfigService,
   ) {}
 
-  async validateUser(email: string, password: string) {
-    const user = await this.usersService.validateUser(email, password);
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+  async validateUser(username: string, password: string): Promise<any> {
+    const user = await this.usersService.findByEmail(username);
+    if (user && (await bcrypt.compare(password, user.hashedPassword))) {
+      const { hashedPassword, ...result } = user;
+      return result;
     }
-    return user;
+    return null;
+  }
+
+  async validateUserById(userId: string): Promise<any> {
+    const user = await this.usersService.findById(userId);
+    if (user) {
+      return user;
+    }
+    return null;
   }
 
   async register(email: string, password: string, nickname: string) {
@@ -36,9 +46,11 @@ export class AuthService {
     return this.generateToken(user);
   }
 
-  async login(email: string, password: string) {
-    const user = await this.validateUser(email, password);
-    return this.generateToken(user);
+  async login(user: any) {
+    const payload = { username: user.email, sub: user._id };
+    return {
+      access_token: this.jwtService.sign(payload),
+    };
   }
 
   async loginWithApple(idToken: string) {

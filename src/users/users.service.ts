@@ -15,6 +15,10 @@ export class UsersService {
     return this.userModel.findOne({ email }).exec();
   }
 
+  async findById(id: string): Promise<User | null> {
+    return this.userModel.findById(id).exec();
+  }
+
   async createUser(userData: Partial<User>): Promise<User> {
     if (userData.hashedPassword) {
       userData.hashedPassword = await bcrypt.hash(userData.hashedPassword, 10);
