@@ -94,24 +94,17 @@ ${userInfo.preferredExercises?.length ? `- 偏好运动：${userInfo.preferredEx
       JSON.parse(input);
       return input;
     } catch (e: any) {
-      // 如果解析失败，进行清理
-      console.log('需要清理 JSON 字符串');
-      // 移除 markdown 代码块标记
       let cleaned = input.replace(/```json\s*/g, '').replace(/```\s*$/g, '');
-      // 移除其他可能的 markdown 格式
       cleaned = cleaned.replace(/```[\s\S]*?```/g, '');
-      // 尝试找到 JSON 对象的开始和结束
       const startIndex = cleaned.indexOf('{');
       const endIndex = cleaned.lastIndexOf('}');
       if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
         cleaned = cleaned.substring(startIndex, endIndex + 1);
-        // 尝试验证清理后的字符串是否为有效的 JSON
         try {
           JSON.parse(cleaned);
           return cleaned.trim();
         } catch (jsonError) {
           console.error('清理后的 JSON 仍然无效:', jsonError);
-          // 可以在这里添加更多的清理逻辑
         }
       }
       console.error('无法提取有效的 JSON 对象', e);
