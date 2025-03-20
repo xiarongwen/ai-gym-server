@@ -2,17 +2,31 @@ import { DeepSeekService } from '../ds/deepseek';
 import { UserFitnessInfo, TrainingPlan } from '../interfaces/training';
 import { UserFitnessModel } from '../models/training-plan.model';
 import mongoose from 'mongoose';
+import { Injectable } from '@nestjs/common';
+import { ExercisesService } from '../exercises/exercises.service';
+import { Exercise } from '../exercises/schemas/exercise.schema';
 
+@Injectable()
 export class TrainingPlanService {
   private deepseek: DeepSeekService;
 
-  constructor() {
+  constructor(private readonly exercisesService: ExercisesService) {
     this.deepseek = new DeepSeekService({
       apiKey: process.env.DEEPSEEK_API_KEY || '',
     });
   }
 
-  private generatePrompt(userInfo: UserFitnessInfo): string {
+  private async getExerciseSuggestions(): Promise<string[]> {
+    const result = await this.exercisesService.getAllExercises(1, 100);
+    return result.data.map((exercise) => exercise.name);
+  }
+
+  private async generatePrompt(userInfo: UserFitnessInfo): Promise<string> {
+    const exerciseSuggestions = await this.getExerciseSuggestions();
+    const suggestionsText = exerciseSuggestions.length > 0
+      ? `请从以下健身动作库中选择动作（如果不合适可以增加其他动作）：${exerciseSuggestions.join(', ')}`
+      : '';
+
     return `作为一位专业的健身教练，所有的计划都要用中文回答，请根据以下用户信息制定一份详细的训练计划：
 
 基本信息：
@@ -25,6 +39,8 @@ export class TrainingPlanService {
 - 每周训练频率：${userInfo.daysPerWeek}天
 ${userInfo.healthIssues?.length ? `- 健康问题：${userInfo.healthIssues.join(', ')}` : ''}
 ${userInfo.preferredExercises?.length ? `- 偏好运动：${userInfo.preferredExercises.join(', ')}` : ''}
+
+${suggestionsText}
 
 请提供：
 1. 整体训练计划概述
@@ -43,9 +59,7 @@ ${userInfo.preferredExercises?.length ? `- 偏好运动：${userInfo.preferredEx
 
   private convertToMarkdown(plan: TrainingPlan): string {
     let markdown = `# 个性化训练计划\n\n`;
-    // 添加概述
     markdown += `## 整体计划概述\n\n${plan.overview}\n\n`;
-    // 添加每周训练安排
     markdown += `## 每周训练安排\n\n`;
     plan.weeklySchedule.forEach((day) => {
       markdown += `### ${day.day} - ${day.focus}\n\n`;
@@ -68,7 +82,6 @@ ${userInfo.preferredExercises?.length ? `- 偏好运动：${userInfo.preferredEx
       });
     });
 
-    // 添加营养建议
     markdown += `## 营养建议\n\n`;
     markdown += `### 每日摄入量\n`;
     markdown += `- 总热量：${plan.nutrition.dailyCalories}\n`;
@@ -78,7 +91,6 @@ ${userInfo.preferredExercises?.length ? `- 偏好运动：${userInfo.preferredEx
     markdown += `- 碳水化合物：${plan.nutrition.macronutrients.carbohydrates}\n`;
     markdown += `- 脂肪：${plan.nutrition.macronutrients.fats}\n\n`;
 
-    // 添加注意事项
     markdown += `## 注意事项\n\n`;
     plan.tips.forEach((tip) => {
       markdown += `- ${tip}\n`;
@@ -90,7 +102,6 @@ ${userInfo.preferredExercises?.length ? `- 偏好运动：${userInfo.preferredEx
   private cleanJsonString(input: string): string {
     if (!input) return '{}';
     try {
-      // 首先尝试直接解析，可能已经是有效的 JSON
       JSON.parse(input);
       return input;
     } catch (e: any) {
@@ -112,6 +123,55 @@ ${userInfo.preferredExercises?.length ? `- 偏好运动：${userInfo.preferredEx
     }
   }
 
+  private async validateAndMapExercises(
+    plan: TrainingPlan,
+  ): Promise<TrainingPlan> {
+    const validatedPlan: TrainingPlan = JSON.parse(JSON.stringify(plan));
+
+    const exerciseNames = new Set<string>();
+    validatedPlan.weeklySchedule.forEach((day) => {
+      day.exercises.forEach((exercise) => {
+        exerciseNames.add(exercise.name);
+      });
+    });
+
+    const exerciseMap = new Map<string, Exercise>();
+    
+    for (const name of exerciseNames) {
+      try {
+        const searchResult = await this.exercisesService.searchExercises(
+          name,
+          1,
+          5,
+        );
+        
+        if (searchResult.data.length > 0) {
+          exerciseMap.set(name, searchResult.data[0]);
+        } else {
+          console.log(`未找到匹配的动作: ${name}`);
+        }
+      } catch (error) {
+        console.error(`搜索动作时出错: ${name}`, error);
+      }
+    }
+
+    validatedPlan.weeklySchedule.forEach((day) => {
+      day.exercises.forEach((exercise: any) => {
+        const matchedExercise = exerciseMap.get(exercise.name);
+        if (matchedExercise) {
+          exercise.exerciseId = (matchedExercise as any)['id'];
+          exercise.dbId = (matchedExercise as any)['_id']?.toString();
+          exercise.bodyPart = matchedExercise.bodyPart;
+          exercise.equipment = matchedExercise.equipment;
+          exercise.target = matchedExercise.target;
+          exercise.gifUrl = matchedExercise.gifUrl;
+        }
+      });
+    });
+
+    return validatedPlan;
+  }
+
   async generateTrainingPlan(
     userId: string,
     userInfo: UserFitnessInfo,
@@ -127,7 +187,7 @@ ${userInfo.preferredExercises?.length ? `- 偏好运动：${userInfo.preferredEx
         },
         {
           role: 'user',
-          content: this.generatePrompt(userInfo),
+          content: await this.generatePrompt(userInfo),
         },
       ]);
 
@@ -144,13 +204,11 @@ ${userInfo.preferredExercises?.length ? `- 偏好运动：${userInfo.preferredEx
       console.log('原始响应:', planString);
 
       try {
-        // 清理可能存在的 markdown 代码块标记
         planString = this.cleanJsonString(planString);
         console.log('清理后的 JSON:', planString);
 
-        const planJson = JSON.parse(planString) as TrainingPlan;
+        let planJson = JSON.parse(planString) as TrainingPlan;
 
-        // 验证必要的字段是否存在
         if (
           !planJson.overview ||
           !planJson.weeklySchedule ||
@@ -161,21 +219,23 @@ ${userInfo.preferredExercises?.length ? `- 偏好运动：${userInfo.preferredEx
           throw new Error('训练计划数据不完整');
         }
 
+        planJson = await this.validateAndMapExercises(planJson);
+
         try {
-          // 保存到 userfitnesses 集合
           const userFitness = new UserFitnessModel({
             userId,
             userInfo,
             planJson,
           });
-          mongoose.connect(
+          
+          await mongoose.connect(
             process.env.MONGODB_URI || 'mongodb://localhost:27017/gym-app',
           );
+          
           await userFitness.save();
           console.log('训练计划已保存到 userfitnesses 集合');
         } catch (dbError) {
           console.error('数据库保存失败:', dbError);
-          // 即使数据库保存失败，也返回生成的计划
         }
 
         return {
