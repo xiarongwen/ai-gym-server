@@ -21,9 +21,12 @@ export class AuthService {
       user = await this.usersService.findByEmail(username);
     }
     if (user && (await bcrypt.compare(password, user.hashedPassword))) {
-      console.log('验证用户:', user);
-      const { ...result } = user;
-      return result;
+      // 返回完整的用户对象，确保_id为字符串
+      const userDoc = user as any;
+      return {
+        ...userDoc.toObject(),
+        _id: userDoc._id.toString(),
+      };
     }
     return null;
   }
@@ -68,40 +71,12 @@ export class AuthService {
 
   async login(user: any) {
     console.log('登录用户:', user);
-    // 检查用户对象
     if (!user) {
       throw new UnauthorizedException('无效的用户信息');
     }
 
-    // 标准化用户对象，确保能够访问_id
-    const userDoc = (user as any)._doc || user;
-
-    // 确保用户ID存在且转换为字符串格式
-    const userId = userDoc._id ? userDoc._id.toString() : null;
-
-    console.log('用户ID (标准化后):', userId);
-
-    if (!userId) {
-      throw new UnauthorizedException('无效的用户ID');
-    }
-
-    const payload = {
-      // 使用手机号作为用户名，如果没有则使用邮箱（向后兼容）
-      username: userDoc.phone || userDoc.email,
-      sub: userId,
-    };
-
-    console.log('生成令牌，用户ID:', payload.sub);
-    return {
-      access_token: this.jwtService.sign(payload),
-      user: {
-        id: userId,
-        username: userDoc.username,
-        email: userDoc.email,
-        phone: userDoc.phone,
-        nickname: userDoc.nickname,
-      },
-    };
+    // 直接使用 generateToken 方法
+    return this.generateToken(user);
   }
 
   async loginWithApple(idToken: string) {

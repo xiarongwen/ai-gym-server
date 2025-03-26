@@ -227,7 +227,8 @@ ${suggestionsText}
             planJson,
           });
           await mongoose.connect(
-            process.env.MONGODB_URI || 'mongodb://localhost:27017/gym-app',
+            process.env.MONGODB_URI ||
+              'mongodb://admin:xiarongwen1A@121.43.51.219:27017/gym-app?authSource=admin',
           );
           await userFitness.save();
           console.log('训练计划已保存到 userfitnesses 集合');
