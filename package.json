@@ -22,7 +22,7 @@
     "version:minor": "npm version minor && cat package.json | grep version | head -1 | awk -F: '{ print $2 }' | sed 's/[\",]//g' | tr -d '[[:space:]]' > VERSION",
     "version:major": "npm version major && cat package.json | grep version | head -1 | awk -F: '{ print $2 }' | sed 's/[\",]//g' | tr -d '[[:space:]]' > VERSION",
     "docker:build": "./build-push.sh",
-    "vercel-build": "npm install && npm run build",
+    "vercel-build": "npm install && nest build",
     "postinstall": "npm run build"
   },
   "dependencies": {
@@ -46,7 +46,8 @@
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
     "reflect-metadata": "^0.2.0",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "openai": "^4.28.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
