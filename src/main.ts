@@ -15,7 +15,7 @@ async function bootstrap() {
   // 添加 CORS 支持
   app.enableCors();
   // 使用环境变量端口或默认 3000
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 3002;
   await app.listen(port);
 }
 bootstrap();
