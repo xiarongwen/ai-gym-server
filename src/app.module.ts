@@ -5,6 +5,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { TrainingModule } from './training/training.module';
 import { ExercisesModule } from './exercises/exercises.module';
+import { ExerciseScraperModule } from './exercise-scraper/exercise-scraper.module';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 
@@ -39,6 +40,7 @@ import { PassportModule } from '@nestjs/passport';
     AuthModule,
     TrainingModule,
     ExercisesModule,
+    ExerciseScraperModule,
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your_jwt_secret',

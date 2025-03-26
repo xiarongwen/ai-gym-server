@@ -23,9 +23,10 @@ export class TrainingPlanService {
 
   private async generatePrompt(userInfo: UserFitnessInfo): Promise<string> {
     const exerciseSuggestions = await this.getExerciseSuggestions();
-    const suggestionsText = exerciseSuggestions.length > 0
-      ? `请从以下健身动作库中选择动作（如果不合适可以增加其他动作）：${exerciseSuggestions.join(', ')}`
-      : '';
+    const suggestionsText =
+      exerciseSuggestions.length > 0
+        ? `请从以下健身动作库中选择动作（如果不合适可以增加其他动作）：${exerciseSuggestions.join(', ')}`
+        : '';
 
     return `作为一位专业的健身教练，所有的计划都要用中文回答，请根据以下用户信息制定一份详细的训练计划：
 
@@ -136,7 +137,6 @@ ${suggestionsText}
     });
 
     const exerciseMap = new Map<string, Exercise>();
-    
     for (const name of exerciseNames) {
       try {
         const searchResult = await this.exercisesService.searchExercises(
@@ -144,7 +144,6 @@ ${suggestionsText}
           1,
           5,
         );
-        
         if (searchResult.data.length > 0) {
           exerciseMap.set(name, searchResult.data[0]);
         } else {
@@ -227,11 +226,9 @@ ${suggestionsText}
             userInfo,
             planJson,
           });
-          
           await mongoose.connect(
             process.env.MONGODB_URI || 'mongodb://localhost:27017/gym-app',
           );
-          
           await userFitness.save();
           console.log('训练计划已保存到 userfitnesses 集合');
         } catch (dbError) {
